@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nexus Arena — Multiplayer Tic-Tac-Toe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#0F1226; --panel:#171B3A; --panel-edge:#2A2F58; --paper:#F4F1E8;
+    --x-color:#3ED9C4; --o-color:#FF6B5F; --gold:#F2B705; --muted:#9AA0C3; --danger:#FF6B5F;
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0; min-height:100vh; font-family:'Space Grotesk',sans-serif; color:var(--paper);
+    background:
+      radial-gradient(1100px 700px at 15% -10%, #232962 0%, transparent 60%),
+      radial-gradient(900px 600px at 110% 10%, #1B2050 0%, transparent 55%),
+      var(--ink);
+    display:flex; align-items:flex-start; justify-content:center; padding:28px 16px;
+  }
+  .wrap{ width:100%; max-width:920px; }
+  h1{ font-size:1.7rem; margin:0 0 4px; letter-spacing:-0.02em; }
+  h1 .x{ color:var(--x-color); } h1 .o{ color:var(--o-color); }
+  .sub{ color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:0.75rem; margin-bottom:22px; }
+
+  .card{ background:var(--panel); border:1px solid var(--panel-edge); border-radius:14px; padding:20px; margin-bottom:16px; }
+  input{
+    width:100%; background:#11142c; border:1px solid var(--panel-edge); color:var(--paper);
+    padding:11px 12px; border-radius:8px; font-family:inherit; font-size:0.95rem; margin-bottom:10px;
+  }
+  button{
+    font-family:'JetBrains Mono',monospace; font-size:0.8rem; border-radius:8px; padding:10px 16px;
+    cursor:pointer; border:1px solid var(--panel-edge); background:transparent; color:var(--paper);
+    transition:.15s ease;
+  }
+  button:hover:not(:disabled){ border-color:var(--gold); color:var(--gold); }
+  button:disabled{ opacity:0.4; cursor:default; }
+  button.primary{ background:var(--gold); color:#171B3A; border-color:var(--gold); font-weight:700; }
+  button.danger{ border-color:var(--danger); color:var(--danger); }
+  .row{ display:flex; gap:10px; flex-wrap:wrap; }
+
+  .layout{ display:grid; grid-template-columns:1fr 260px; gap:16px; }
+  @media (max-width:720px){ .layout{ grid-template-columns:1fr; } }
+
+  .code-badge{
+    font-family:'JetBrains Mono',monospace; font-size:1.4rem; letter-spacing:0.15em;
+    color:var(--gold); background:#11142c; border:1px dashed var(--panel-edge);
+    padding:10px 16px; border-radius:8px; display:inline-block;
+  }
+
+  .status{ text-align:center; font-size:1.05rem; margin:14px 0; min-height:26px; }
+  .status .x{ color:var(--x-color); font-weight:700; } .status .o{ color:var(--o-color); font-weight:700; }
+
+  .board{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px; background:var(--panel-edge);
+    border-radius:14px; padding:8px; max-width:380px; margin:0 auto; aspect-ratio:1;
+  }
+  .cell{
+    background:var(--panel); border:none; border-radius:9px; display:flex; align-items:center;
+    justify-content:center; font-size:clamp(1.8rem,8vw,2.8rem); font-weight:700; cursor:pointer; color:var(--paper);
+  }
+  .cell:disabled{ cursor:default; }
+  .cell.x{ color:var(--x-color); } .cell.o{ color:var(--o-color); }
+  .cell.win{ background:rgba(242,183,5,0.18); }
+
+  .scoreboard{ display:flex; justify-content:center; gap:18px; margin:14px 0; font-family:'JetBrains Mono',monospace; font-size:0.85rem; }
+  .scoreboard b{ font-size:1.1rem; }
+  .scoreboard .x b{ color:var(--x-color); } .scoreboard .o b{ color:var(--o-color); } .scoreboard .d b{ color:var(--gold); }
+
+  .roster{ display:flex; flex-direction:column; gap:8px; }
+  .person{
+    display:flex; align-items:center; gap:8px; background:#11142c; border:1px solid var(--panel-edge);
+    border-radius:8px; padding:8px 10px; font-size:0.85rem;
+  }
+  .person.speaking{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset; }
+  .role-tag{
+    font-family:'JetBrains Mono',monospace; font-size:0.62rem; padding:2px 6px; border-radius:5px;
+    margin-left:auto; white-space:nowrap;
+  }
+  .role-tag.player_x{ background:rgba(62,217,196,0.15); color:var(--x-color); }
+  .role-tag.player_o{ background:rgba(255,107,95,0.15); color:var(--o-color); }
+  .role-tag.spectator{ background:rgba(154,160,195,0.15); color:var(--muted); }
+  .role-tag.host{ background:rgba(242,183,5,0.15); color:var(--gold); }
+  .mic-dot{ width:8px; height:8px; border-radius:50%; background:#3d4270; flex-shrink:0; }
+  .mic-dot.muted{ background:var(--danger); }
+  .mic-dot.on{ background:var(--x-color); }
+  .person.offline{ opacity:0.45; }
+  .person .offline-tag{ font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:var(--muted); margin-left:auto; }
+
+  .host-controls select{
+    background:#11142c; color:var(--paper); border:1px solid var(--panel-edge); border-radius:6px;
+    font-family:'JetBrains Mono',monospace; font-size:0.7rem; padding:3px 6px;
+  }
+  .pending-item{ display:flex; align-items:center; gap:6px; }
+  .section-label{ font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--muted); margin:14px 0 8px; text-transform:uppercase; }
+  .hint{ color:var(--muted); font-size:0.8rem; line-height:1.5; }
+  .toast{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--gold); min-height:18px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="x">X</span>/<span class="o">O</span> Nexus Arena</h1>
+  <div class="sub">rooms · spectators · live voice</div>
+
+  <!-- ENTRY SCREEN -->
+  <div class="card" id="entryCard">
+    <input id="nameInput" placeholder="Your display name" maxlength="24">
+    <div class="row">
+      <button class="primary" id="createBtn">Create a room</button>
+    </div>
+    <div class="section-label">— or join an existing room —</div>
+    <input id="codeInput" placeholder="Room code" maxlength="8" style="text-transform:uppercase">
+    <button id="joinBtn">Request to join</button>
+    <div class="toast" id="entryToast"></div>
+  </div>
+
+  <!-- ROOM SCREEN -->
+  <div id="roomCard" style="display:none;">
+    <div class="card">
+      <div class="row" style="justify-content:space-between; align-items:center;">
+        <div>Room code: <span class="code-badge" id="codeBadge"></span></div>
+        <div class="row">
+          <button id="micBtn">🎤 Enable mic</button>
+          <button class="danger" id="leaveBtn">Leave room</button>
+        </div>
+      </div>
+      <div class="toast" id="roomToast"></div>
+    </div>
+
+    <div class="layout">
+      <div>
+        <div class="card">
+          <div class="status" id="statusLine">Waiting in lobby…</div>
+          <div class="scoreboard">
+            <div class="x">X <b id="scoreX">0</b></div>
+            <div class="d">Draws <b id="scoreD">0</b></div>
+            <div class="o">O <b id="scoreO">0</b></div>
+          </div>
+          <div class="board" id="board"></div>
+          <div class="row" style="justify-content:center; margin-top:16px;" id="hostMatchControls"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="section-label">Roster</div>
+        <div class="roster" id="roster"></div>
+
+        <div id="hostRequests"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="remoteAudioContainer"></div>
+</div>
+
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  const uid = 'u_' + Math.random().toString(36).slice(2, 10);
+  let ws = null;
+  let myRole = null;
+  let isHost = false;
+  let state = null;
+  const peers = {}; // user_id -> RTCPeerConnection
+  let localStream = null;
+  let micEnabled = false;
+  let intentionalLeave = false;
+  let lastCode = null, lastName = null;
+  let reconnectAttempt = 0;
+
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const wsBase = `${proto}://${location.host}/ws/`;
+
+  function toast(msg){ $('entryToast').textContent = msg; }
+  function roomToast(msg){ $('roomToast').textContent = msg; }
+
+  $('createBtn').onclick = () => {
+    const name = $('nameInput').value.trim() || 'Host';
+    connect('NEW', name, 'create');
+  };
+  $('joinBtn').onclick = () => {
+    const name = $('nameInput').value.trim() || 'Guest';
+    const code = $('codeInput').value.trim().toUpperCase();
+    if (!code) { toast('Enter a room code first.'); return; }
+    connect(code, name, 'join');
+  };
+  $('leaveBtn').onclick = () => {
+    intentionalLeave = true;
+    send({type:'leave'});
+    Object.values(peers).forEach(pc => pc.close());
+    if (ws) ws.close();
+    location.reload();
+  };
+
+  function connect(code, name, action){
+    lastCode = code; lastName = name;
+    ws = new WebSocket(`${wsBase}${encodeURIComponent(code)}?uid=${uid}&name=${encodeURIComponent(name)}&action=${action}`);
+    ws.onmessage = (ev) => {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === 'heartbeat'){
+        return;
+      } else if (msg.type === 'joined'){
+        reconnectAttempt = 0;
+        roomToast('');
+        $('entryCard').style.display = 'none';
+        $('roomCard').style.display = 'block';
+        $('codeBadge').textContent = msg.code;
+        lastCode = msg.code;
+      } else if (msg.type === 'room_state'){
+        state = msg;
+        render();
+        handlePeers();
+      } else if (msg.type === 'declined'){
+        alert('The host declined your join request.');
+        location.reload();
+      } else if (msg.type === 'signal'){
+        handleSignal(msg.from, msg.data);
+      }
+    };
+    ws.onclose = () => {
+      if (!state){
+        toast('Could not reach that room.');
+        return;
+      }
+      if (intentionalLeave) return;
+      // Unexpected drop (network blip, backgrounded tab, etc) — try to rejoin
+      // the same room with the same identity rather than stranding the user.
+      reconnectAttempt++;
+      roomToast('Connection dropped — reconnecting…');
+      setTimeout(() => {
+        if (!intentionalLeave) connect(lastCode, lastName, 'join');
+      }, Math.min(1500 * reconnectAttempt, 6000));
+    };
+  }
+
+  function send(payload){ if (ws && ws.readyState === 1) ws.send(JSON.stringify(payload)); }
+
+  function render(){
+    if (!state) return;
+    isHost = state.host_id === uid;
+    const me = state.participants.find(p => p.id === uid);
+    myRole = me ? me.role : null;
+
+    // Board
+    const boardEl = $('board');
+    boardEl.innerHTML = '';
+    state.board.forEach((val, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'cell' + (val ? ' ' + val.toLowerCase() : '');
+      if (state.win_line && state.win_line.includes(i)) btn.classList.add('win');
+      btn.textContent = val || '';
+      const canPlay = state.status === 'playing' &&
+        ((myRole === 'player_x' && state.turn === 'X') || (myRole === 'player_o' && state.turn === 'O'));
+      btn.disabled = !!val || !canPlay;
+      btn.onclick = () => send({type:'move', cell:i});
+      boardEl.appendChild(btn);
+    });
+
+    $('scoreX').textContent = state.scores.X;
+    $('scoreO').textContent = state.scores.O;
+    $('scoreD').textContent = state.scores.draws;
+
+    let statusText = '';
+    if (state.status === 'lobby') statusText = 'Lobby — waiting for host to start the match';
+    else if (state.status === 'playing') statusText = `<span class="${state.turn.toLowerCase()}">${state.turn}</span>'s turn`;
+    else if (state.status === 'finished'){
+      statusText = state.winner === 'draw' ? "It's a draw" : `<span class="${state.winner.toLowerCase()}">${state.winner}</span> wins!`;
+    }
+    $('statusLine').innerHTML = statusText;
+
+    // Host match controls
+    const hostControls = $('hostMatchControls');
+    hostControls.innerHTML = '';
+    if (isHost){
+      const hasX = state.participants.some(p => p.role === 'player_x');
+      const hasO = state.participants.some(p => p.role === 'player_o');
+      if (state.status === 'lobby'){
+        const b = document.createElement('button');
+        b.className = 'primary';
+        b.textContent = 'Start match';
+        b.disabled = !(hasX && hasO);
+        b.onclick = () => send({type:'start_match'});
+        hostControls.appendChild(b);
+      } else if (state.status === 'finished'){
+        const b = document.createElement('button');
+        b.className = 'primary';
+        b.textContent = 'Play again';
+        b.onclick = () => send({type:'play_again'});
+        hostControls.appendChild(b);
+      }
+    }
+
+    // Roster
+    const roster = $('roster');
+    roster.innerHTML = '';
+    state.participants.forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'person' + (p.connected === false ? ' offline' : '');
+      row.id = 'person-' + p.id;
+      const dot = document.createElement('div');
+      dot.className = 'mic-dot' + (p.muted ? ' muted' : (p.id === uid && micEnabled ? ' on' : ''));
+      row.appendChild(dot);
+      const label = document.createElement('span');
+      label.textContent = p.name + (p.id === uid ? ' (you)' : '');
+      row.appendChild(label);
+      if (p.connected === false){
+        const off = document.createElement('span');
+        off.className = 'offline-tag';
+        off.textContent = 'reconnecting…';
+        row.appendChild(off);
+      }
+
+      if (isHost && p.id !== uid){
+        const sel = document.createElement('select');
+        sel.className = 'host-controls';
+        [['spectator','Spectator'],['player_x','Player X'],['player_o','Player O']].forEach(([v,l]) => {
+          const opt = document.createElement('option');
+          opt.value = v; opt.textContent = l;
+          if (p.role === v) opt.selected = true;
+          sel.appendChild(opt);
+        });
+        sel.onchange = () => send({type:'assign_role', user_id:p.id, role:sel.value});
+        row.appendChild(sel);
+      } else {
+        const tag = document.createElement('span');
+        tag.className = 'role-tag ' + p.role;
+        tag.textContent = p.role === 'player_x' ? 'PLAYER X' : p.role === 'player_o' ? 'PLAYER O' : 'SPECTATOR';
+        row.appendChild(tag);
+      }
+      if (p.id === state.host_id){
+        const hostTag = document.createElement('span');
+        hostTag.className = 'role-tag host';
+        hostTag.textContent = 'HOST';
+        row.appendChild(hostTag);
+      }
+      roster.appendChild(row);
+    });
+
+    // Pending join requests (host only)
+    const reqBox = $('hostRequests');
+    reqBox.innerHTML = '';
+    if (isHost && state.pending && state.pending.length){
+      const label = document.createElement('div');
+      label.className = 'section-label';
+      label.textContent = 'Join requests';
+      reqBox.appendChild(label);
+      state.pending.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'pending-item';
+        row.innerHTML = `<span>${p.name}</span>`;
+        const ok = document.createElement('button');
+        ok.textContent = 'Accept';
+        ok.onclick = () => send({type:'approve', user_id:p.id});
+        const no = document.createElement('button');
+        no.className = 'danger';
+        no.textContent = 'Decline';
+        no.onclick = () => send({type:'decline', user_id:p.id});
+        row.appendChild(ok); row.appendChild(no);
+        reqBox.appendChild(row);
+      });
+    }
+  }
+
+  // ---- Mic / WebRTC voice mesh ----
+  $('micBtn').onclick = async () => {
+    if (!micEnabled){
+      try {
+        localStream = await navigator.mediaDevices.getUserMedia({audio:true});
+        micEnabled = true;
+        $('micBtn').textContent = '🔴 Mute mic';
+        send({type:'mute', muted:false});
+        Object.values(peers).forEach(pc => {
+          localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+        });
+        render();
+      } catch(e){ alert('Microphone permission was denied.'); }
+    } else {
+      const track = localStream && localStream.getAudioTracks()[0];
+      if (track){
+        track.enabled = !track.enabled;
+        $('micBtn').textContent = track.enabled ? '🔴 Mute mic' : '🎤 Unmute mic';
+        send({type:'mute', muted: !track.enabled});
+        render();
+      }
+    }
+  };
+
+  function makePeerConnection(peerId){
+    const pc = new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});
+    peers[peerId] = pc;
+    if (localStream) localStream.getTracks().forEach(t => pc.addTrack(t, localStream));
+    pc.onicecandidate = (e) => {
+      if (e.candidate) send({type:'signal', target:peerId, data:{candidate:e.candidate}});
+    };
+    pc.ontrack = (e) => {
+      let audioEl = document.getElementById('audio-' + peerId);
+      if (!audioEl){
+        audioEl = document.createElement('audio');
+        audioEl.id = 'audio-' + peerId;
+        audioEl.autoplay = true;
+        $('remoteAudioContainer').appendChild(audioEl);
+      }
+      audioEl.srcObject = e.streams[0];
+      watchSpeaking(peerId, e.streams[0]);
+    };
+    return pc;
+  }
+
+  function handlePeers(){
+    if (!state) return;
+    const others = state.participants.filter(p => p.id !== uid);
+    others.forEach(p => {
+      if (!peers[p.id] && uid < p.id){
+        const pc = makePeerConnection(p.id);
+        pc.createOffer().then(offer => {
+          pc.setLocalDescription(offer);
+          send({type:'signal', target:p.id, data:{sdp:offer}});
+        });
+      }
+    });
+    // Clean up peers who left
+    Object.keys(peers).forEach(pid => {
+      if (!others.find(p => p.id === pid)){
+        peers[pid].close();
+        delete peers[pid];
+        const el = document.getElementById('audio-' + pid);
+        if (el) el.remove();
+      }
+    });
+  }
+
+  async function handleSignal(fromId, data){
+    let pc = peers[fromId];
+    if (!pc) pc = makePeerConnection(fromId);
+    if (data.sdp){
+      await pc.setRemoteDescription(new RTCSessionDescription(data.sdp));
+      if (data.sdp.type === 'offer'){
+        const answer = await pc.createAnswer();
+        await pc.setLocalDescription(answer);
+        send({type:'signal', target:fromId, data:{sdp:answer}});
+      }
+    } else if (data.candidate){
+      try { await pc.addIceCandidate(new RTCIceCandidate(data.candidate)); } catch(e){}
+    }
+  }
+
+  function watchSpeaking(peerId, stream){
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const src = ctx.createMediaStreamSource(stream);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 512;
+      src.connect(analyser);
+      const data = new Uint8Array(analyser.frequencyBinCount);
+      setInterval(() => {
+        analyser.getByteFrequencyData(data);
+        const avg = data.reduce((a,b) => a+b, 0) / data.length;
+        const el = document.getElementById('person-' + peerId);
+        if (el) el.classList.toggle('speaking', avg > 18);
+      }, 200);
+    } catch(e){}
+  }
+})();
+</script>
+</body>
+</html>
