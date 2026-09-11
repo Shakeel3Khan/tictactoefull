@@ -15,154 +15,318 @@
 <title>Nexus Arena — Multiplayer Tic-Tac-Toe</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bungee&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --ink:#0F1226; --panel:#171B3A; --panel-edge:#2A2F58; --paper:#F4F1E8;
-    --x-color:#3ED9C4; --o-color:#FF6B5F; --gold:#F2B705; --muted:#9AA0C3; --danger:#FF6B5F;
+    --stage:#0A0D1A;
+    --panel:#11152A;
+    --panel-2:#161B36;
+    --edge: rgba(154,166,255,0.14);
+    --edge-strong: rgba(154,166,255,0.28);
+    --paper:#EFEDE6;
+    --cyan:#2FE6D9;
+    --magenta:#FF3E8C;
+    --amber:#FFC145;
+    --muted:#8891C7;
   }
   *{ box-sizing:border-box; }
+  html,body{ height:100%; }
   body{
-    margin:0; min-height:100vh; font-family:'Space Grotesk',sans-serif; color:var(--paper);
+    margin:0;
+    font-family:'Manrope', sans-serif;
+    color:var(--paper);
     background:
-      radial-gradient(1100px 700px at 15% -10%, #232962 0%, transparent 60%),
-      radial-gradient(900px 600px at 110% 10%, #1B2050 0%, transparent 55%),
-      var(--ink);
-    display:flex; align-items:flex-start; justify-content:center; padding:28px 16px;
+      radial-gradient(900px 500px at 12% -8%, rgba(47,230,217,0.10), transparent 60%),
+      radial-gradient(900px 600px at 100% 0%, rgba(255,62,140,0.10), transparent 55%),
+      var(--stage);
+    min-height:100%;
+    display:flex;
+    justify-content:center;
+    padding:36px 16px 60px;
+    position:relative;
+    overflow-x:hidden;
   }
-  .wrap{ width:100%; max-width:920px; }
-  h1{ font-size:1.7rem; margin:0 0 4px; letter-spacing:-0.02em; }
-  h1 .x{ color:var(--x-color); } h1 .o{ color:var(--o-color); }
-  .sub{ color:var(--muted); font-family:'JetBrains Mono',monospace; font-size:0.75rem; margin-bottom:22px; }
+  body::before{
+    content:'';
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:repeating-linear-gradient(
+      to bottom, rgba(255,255,255,0.018) 0px, rgba(255,255,255,0.018) 1px,
+      transparent 1px, transparent 3px
+    );
+    mix-blend-mode:overlay;
+  }
 
-  .card{ background:var(--panel); border:1px solid var(--panel-edge); border-radius:14px; padding:20px; margin-bottom:16px; }
+  .wrap{ width:100%; max-width:960px; position:relative; z-index:1; }
+
+  .marquee{ text-align:center; margin-bottom:30px; }
+  .marquee h1{
+    font-family:'Bungee', sans-serif;
+    font-weight:400;
+    font-size:clamp(1.9rem, 5vw, 3rem);
+    margin:0;
+    letter-spacing:0.01em;
+    background:linear-gradient(90deg, var(--cyan), var(--magenta) 65%, var(--amber));
+    background-size:200% 100%;
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    animation:sweep 6s ease-in-out infinite;
+  }
+  @keyframes sweep{
+    0%,100%{ background-position:0% 50%; }
+    50%{ background-position:100% 50%; }
+  }
+  .marquee .underline{
+    width:min(420px, 70%);
+    height:2px;
+    margin:14px auto 0;
+    background:linear-gradient(90deg, transparent, var(--cyan), var(--magenta), transparent);
+    opacity:0.7;
+  }
+  .chips{
+    display:flex; justify-content:center; gap:8px; margin-top:16px; flex-wrap:wrap;
+  }
+  .chip{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.68rem;
+    padding:5px 12px;
+    border-radius:999px;
+    border:1px solid var(--edge);
+    color:var(--muted);
+    background:rgba(255,255,255,0.02);
+  }
+
+  .panel{
+    background:linear-gradient(180deg, var(--panel), var(--panel-2));
+    border:1px solid var(--edge);
+    border-radius:16px;
+    padding:22px;
+    margin-bottom:16px;
+    position:relative;
+  }
+  .panel::before, .panel::after{
+    content:'';
+    position:absolute; width:14px; height:14px;
+    border-color:var(--edge-strong); border-style:solid; opacity:0.9;
+  }
+  .panel::before{ top:10px; left:10px; border-width:2px 0 0 2px; border-radius:4px 0 0 0; }
+  .panel::after{ bottom:10px; right:10px; border-width:0 2px 2px 0; border-radius:0 0 4px 0; }
+
+  label.field-label{
+    display:block; font-size:0.78rem; color:var(--muted); margin-bottom:6px; font-weight:600;
+  }
   input{
-    width:100%; background:#11142c; border:1px solid var(--panel-edge); color:var(--paper);
-    padding:11px 12px; border-radius:8px; font-family:inherit; font-size:0.95rem; margin-bottom:10px;
+    width:100%; background:#0D1024; border:1px solid var(--edge); color:var(--paper);
+    padding:12px 14px; border-radius:10px; font-family:inherit; font-size:0.95rem; margin-bottom:14px;
+    outline:none; transition:border-color .15s ease, box-shadow .15s ease;
   }
+  input:focus{ border-color:var(--cyan); box-shadow:0 0 0 3px rgba(47,230,217,0.15); }
+  input::placeholder{ color:#565f8f; }
+
   button{
-    font-family:'JetBrains Mono',monospace; font-size:0.8rem; border-radius:8px; padding:10px 16px;
-    cursor:pointer; border:1px solid var(--panel-edge); background:transparent; color:var(--paper);
-    transition:.15s ease;
+    font-family:'Manrope', sans-serif;
+    font-weight:700;
+    font-size:0.86rem;
+    border-radius:10px;
+    padding:12px 20px;
+    cursor:pointer;
+    border:1px solid var(--edge);
+    background:rgba(255,255,255,0.03);
+    color:var(--paper);
+    transition:transform .12s ease, border-color .15s ease, box-shadow .15s ease, opacity .15s ease;
   }
-  button:hover:not(:disabled){ border-color:var(--gold); color:var(--gold); }
-  button:disabled{ opacity:0.4; cursor:default; }
-  button.primary{ background:var(--gold); color:#171B3A; border-color:var(--gold); font-weight:700; }
-  button.danger{ border-color:var(--danger); color:var(--danger); }
+  button:hover:not(:disabled){ transform:translateY(-1px); border-color:var(--edge-strong); }
+  button:active:not(:disabled){ transform:translateY(0); }
+  button:disabled{ opacity:0.35; cursor:default; transform:none; }
+  button:focus-visible{ outline:2px solid var(--cyan); outline-offset:2px; }
+
+  button.primary{
+    background:linear-gradient(90deg, var(--cyan), #22C7BC);
+    color:#04211E; border-color:transparent;
+    box-shadow:0 0 0 rgba(47,230,217,0), 0 6px 20px -6px rgba(47,230,217,0.6);
+  }
+  button.primary:hover:not(:disabled){ box-shadow:0 6px 24px -4px rgba(47,230,217,0.75); }
+  button.danger{
+    border-color:rgba(255,62,140,0.4); color:var(--magenta); background:rgba(255,62,140,0.06);
+  }
+  button.danger:hover:not(:disabled){ border-color:var(--magenta); box-shadow:0 0 0 3px rgba(255,62,140,0.12); }
+
   .row{ display:flex; gap:10px; flex-wrap:wrap; }
+  .full{ width:100%; }
 
-  .layout{ display:grid; grid-template-columns:1fr 260px; gap:16px; }
-  @media (max-width:720px){ .layout{ grid-template-columns:1fr; } }
-
-  .code-badge{
-    font-family:'JetBrains Mono',monospace; font-size:1.4rem; letter-spacing:0.15em;
-    color:var(--gold); background:#11142c; border:1px dashed var(--panel-edge);
-    padding:10px 16px; border-radius:8px; display:inline-block;
+  .divider-label{
+    display:flex; align-items:center; gap:10px; margin:20px 0 14px;
+    color:var(--muted); font-size:0.78rem; font-weight:600;
+  }
+  .divider-label::before, .divider-label::after{
+    content:''; flex:1; height:1px; background:var(--edge);
   }
 
-  .status{ text-align:center; font-size:1.05rem; margin:14px 0; min-height:26px; }
-  .status .x{ color:var(--x-color); font-weight:700; } .status .o{ color:var(--o-color); font-weight:700; }
+  .toast{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:0.74rem; color:var(--amber); min-height:18px; margin-top:4px; }
 
+  .layout{ display:grid; grid-template-columns:1fr 280px; gap:16px; }
+  @media (max-width:760px){ .layout{ grid-template-columns:1fr; } }
+
+  .room-top{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; }
+  .code-label{ font-size:0.8rem; color:var(--muted); }
+  .code-badge{
+    font-family:'JetBrains Mono', monospace; font-weight:700; font-size:1.3rem; letter-spacing:0.18em;
+    color:var(--amber); background:#0D1024; border:1px dashed var(--edge-strong);
+    padding:8px 16px; border-radius:10px; display:inline-block; margin-left:8px;
+  }
+
+  .status{
+    text-align:center; font-size:1.05rem; font-weight:600; margin:4px 0 18px; min-height:26px;
+  }
+  .status .x{ color:var(--cyan); } .status .o{ color:var(--magenta); }
+
+  .scoreboard{
+    display:flex; justify-content:center; gap:22px; margin-bottom:20px;
+    font-family:'JetBrains Mono',monospace;
+  }
+  .scoreboard .slot{ text-align:center; }
+  .scoreboard .slot .n{ display:block; font-size:0.68rem; color:var(--muted); margin-bottom:2px; }
+  .scoreboard .slot .v{ font-size:1.4rem; font-weight:700; }
+  .scoreboard .x .v{ color:var(--cyan); } .scoreboard .o .v{ color:var(--magenta); } .scoreboard .d .v{ color:var(--amber); }
+
+  .cabinet{
+    max-width:380px; margin:0 auto;
+    padding:14px;
+    border-radius:20px;
+    background:linear-gradient(160deg, #1B2044, #0D1024);
+    border:1px solid var(--edge-strong);
+    box-shadow:inset 0 2px 10px rgba(0,0,0,0.5), 0 20px 40px -20px rgba(0,0,0,0.6);
+  }
   .board{
-    display:grid; grid-template-columns:repeat(3,1fr); gap:8px; background:var(--panel-edge);
-    border-radius:14px; padding:8px; max-width:380px; margin:0 auto; aspect-ratio:1;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+    background:#05060D; border-radius:12px; padding:8px; aspect-ratio:1;
   }
   .cell{
-    background:var(--panel); border:none; border-radius:9px; display:flex; align-items:center;
-    justify-content:center; font-size:clamp(1.8rem,8vw,2.8rem); font-weight:700; cursor:pointer; color:var(--paper);
+    background:var(--panel); border:1px solid var(--edge); border-radius:9px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Manrope',sans-serif;
+    font-size:clamp(1.8rem,8vw,2.7rem); font-weight:800; cursor:pointer; color:var(--paper);
+    transition:background .15s ease, border-color .15s ease;
   }
+  .cell:hover:not(:disabled){ border-color:var(--edge-strong); }
   .cell:disabled{ cursor:default; }
-  .cell.x{ color:var(--x-color); } .cell.o{ color:var(--o-color); }
-  .cell.win{ background:rgba(242,183,5,0.18); }
+  .cell.x{ color:var(--cyan); text-shadow:0 0 18px rgba(47,230,217,0.45); }
+  .cell.o{ color:var(--magenta); text-shadow:0 0 18px rgba(255,62,140,0.45); }
+  .cell.win{ background:rgba(255,193,69,0.14); border-color:rgba(255,193,69,0.5); }
 
-  .scoreboard{ display:flex; justify-content:center; gap:18px; margin:14px 0; font-family:'JetBrains Mono',monospace; font-size:0.85rem; }
-  .scoreboard b{ font-size:1.1rem; }
-  .scoreboard .x b{ color:var(--x-color); } .scoreboard .o b{ color:var(--o-color); } .scoreboard .d b{ color:var(--gold); }
+  .match-controls{ display:flex; justify-content:center; margin-top:18px; }
+
+  .panel-heading{
+    display:flex; align-items:center; gap:8px; margin-bottom:12px;
+    font-size:0.82rem; font-weight:700; color:var(--paper);
+  }
+  .panel-heading .dot{ width:7px; height:7px; border-radius:50%; background:var(--amber); }
 
   .roster{ display:flex; flex-direction:column; gap:8px; }
   .person{
-    display:flex; align-items:center; gap:8px; background:#11142c; border:1px solid var(--panel-edge);
-    border-radius:8px; padding:8px 10px; font-size:0.85rem;
+    display:flex; align-items:center; gap:9px; background:#0D1024; border:1px solid var(--edge);
+    border-left:3px solid var(--edge); border-radius:9px; padding:9px 11px; font-size:0.85rem;
+    transition:opacity .2s ease, border-color .2s ease;
   }
-  .person.speaking{ border-color:var(--gold); box-shadow:0 0 0 1px var(--gold) inset; }
+  .person.speaking{ border-color:var(--cyan); box-shadow:0 0 0 1px rgba(47,230,217,0.35), 0 0 16px -4px rgba(47,230,217,0.6); }
+  .person.offline{ opacity:0.4; }
+
   .role-tag{
-    font-family:'JetBrains Mono',monospace; font-size:0.62rem; padding:2px 6px; border-radius:5px;
-    margin-left:auto; white-space:nowrap;
+    font-family:'JetBrains Mono', monospace; font-size:0.62rem; font-weight:600; padding:3px 8px;
+    border-radius:6px; margin-left:auto; white-space:nowrap;
   }
-  .role-tag.player_x{ background:rgba(62,217,196,0.15); color:var(--x-color); }
-  .role-tag.player_o{ background:rgba(255,107,95,0.15); color:var(--o-color); }
-  .role-tag.spectator{ background:rgba(154,160,195,0.15); color:var(--muted); }
-  .role-tag.host{ background:rgba(242,183,5,0.15); color:var(--gold); }
-  .mic-dot{ width:8px; height:8px; border-radius:50%; background:#3d4270; flex-shrink:0; }
-  .mic-dot.muted{ background:var(--danger); }
-  .mic-dot.on{ background:var(--x-color); }
-  .person.offline{ opacity:0.45; }
-  .person .offline-tag{ font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:var(--muted); margin-left:auto; }
+  .role-tag.player_x{ background:rgba(47,230,217,0.14); color:var(--cyan); }
+  .role-tag.player_o{ background:rgba(255,62,140,0.14); color:var(--magenta); }
+  .role-tag.spectator{ background:rgba(136,145,199,0.14); color:var(--muted); }
+  .role-tag.host{ background:rgba(255,193,69,0.14); color:var(--amber); }
+
+  .mic-dot{ width:8px; height:8px; border-radius:50%; background:#333a5e; flex-shrink:0; }
+  .mic-dot.muted{ background:var(--magenta); }
+  .mic-dot.on{ background:var(--cyan); box-shadow:0 0 8px rgba(47,230,217,0.8); }
+
+  .offline-tag{ font-family:'JetBrains Mono',monospace; font-size:0.62rem; color:var(--muted); margin-left:auto; }
 
   .host-controls select{
-    background:#11142c; color:var(--paper); border:1px solid var(--panel-edge); border-radius:6px;
-    font-family:'JetBrains Mono',monospace; font-size:0.7rem; padding:3px 6px;
+    background:#0D1024; color:var(--paper); border:1px solid var(--edge); border-radius:7px;
+    font-family:'JetBrains Mono',monospace; font-size:0.68rem; padding:4px 6px; cursor:pointer;
   }
-  .pending-item{ display:flex; align-items:center; gap:6px; }
-  .section-label{ font-family:'JetBrains Mono',monospace; font-size:0.68rem; color:var(--muted); margin:14px 0 8px; text-transform:uppercase; }
-  .hint{ color:var(--muted); font-size:0.8rem; line-height:1.5; }
-  .toast{ text-align:center; font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--gold); min-height:18px; }
+
+  .pending-item{ display:flex; align-items:center; gap:6px; font-size:0.85rem; }
+  .pending-item button{ padding:6px 12px; font-size:0.72rem; }
+
+  .section-label{
+    font-family:'JetBrains Mono', monospace; font-size:0.68rem; color:var(--amber);
+    margin:16px 0 8px; font-weight:600;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    .marquee h1{ animation:none; }
+    button{ transition:none; }
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1><span class="x">X</span>/<span class="o">O</span> Nexus Arena</h1>
-  <div class="sub">rooms · spectators · live voice</div>
+
+  <div class="marquee">
+    <h1>X / O Nexus Arena</h1>
+    <div class="underline"></div>
+    <div class="chips">
+      <span class="chip">Rooms</span>
+      <span class="chip">Spectators</span>
+      <span class="chip">Live voice</span>
+    </div>
+  </div>
 
   <!-- ENTRY SCREEN -->
-  <div class="card" id="entryCard">
-    <input id="nameInput" placeholder="Your display name" maxlength="24">
-    <div class="row">
-      <button class="primary" id="createBtn">Create a room</button>
-    </div>
-    <div class="section-label">— or join an existing room —</div>
-    <input id="codeInput" placeholder="Room code" maxlength="8" style="text-transform:uppercase">
-    <button id="joinBtn">Request to join</button>
+  <div class="panel" id="entryCard">
+    <label class="field-label" for="nameInput">Your display name</label>
+    <input id="nameInput" placeholder="e.g. Kestrel" maxlength="24">
+    <button class="primary full" id="createBtn">Create a room</button>
+
+    <div class="divider-label">join an existing room</div>
+    <label class="field-label" for="codeInput">Room code</label>
+    <input id="codeInput" placeholder="e.g. 7QK2M" maxlength="8" style="text-transform:uppercase">
+    <button class="full" id="joinBtn">Request to join</button>
     <div class="toast" id="entryToast"></div>
   </div>
 
   <!-- ROOM SCREEN -->
   <div id="roomCard" style="display:none;">
-    <div class="card">
-      <div class="row" style="justify-content:space-between; align-items:center;">
-        <div>Room code: <span class="code-badge" id="codeBadge"></span></div>
-        <div class="row">
-          <button id="micBtn">🎤 Enable mic</button>
-          <button class="danger" id="leaveBtn">Leave room</button>
-        </div>
+    <div class="panel room-top">
+      <div><span class="code-label">Room code</span><span class="code-badge" id="codeBadge"></span></div>
+      <div class="row">
+        <button id="micBtn">🎤 Enable mic</button>
+        <button class="danger" id="leaveBtn">Leave room</button>
       </div>
-      <div class="toast" id="roomToast"></div>
     </div>
+    <div class="toast" id="roomToast" style="margin-bottom:8px;"></div>
 
     <div class="layout">
       <div>
-        <div class="card">
+        <div class="panel">
           <div class="status" id="statusLine">Waiting in lobby…</div>
           <div class="scoreboard">
-            <div class="x">X <b id="scoreX">0</b></div>
-            <div class="d">Draws <b id="scoreD">0</b></div>
-            <div class="o">O <b id="scoreO">0</b></div>
+            <div class="slot x"><span class="n">Player X</span><span class="v" id="scoreX">0</span></div>
+            <div class="slot d"><span class="n">Draws</span><span class="v" id="scoreD">0</span></div>
+            <div class="slot o"><span class="n">Player O</span><span class="v" id="scoreO">0</span></div>
           </div>
-          <div class="board" id="board"></div>
-          <div class="row" style="justify-content:center; margin-top:16px;" id="hostMatchControls"></div>
+          <div class="cabinet"><div class="board" id="board"></div></div>
+          <div class="match-controls" id="hostMatchControls"></div>
         </div>
       </div>
 
-      <div class="card">
-        <div class="section-label">Roster</div>
-        <div class="roster" id="roster"></div>
-
-        <div id="hostRequests"></div>
+      <div>
+        <div class="panel">
+          <div class="panel-heading"><span class="dot"></span>Roster</div>
+          <div class="roster" id="roster"></div>
+          <div id="hostRequests"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <div id="remoteAudioContainer"></div>
+  <div id="remoteAudioContainer" style="display:none;"></div>
 </div>
 
 <script>
@@ -235,8 +399,6 @@
         return;
       }
       if (intentionalLeave) return;
-      // Unexpected drop (network blip, backgrounded tab, etc) — try to rejoin
-      // the same room with the same identity rather than stranding the user.
       reconnectAttempt++;
       roomToast('Connection dropped — reconnecting…');
       setTimeout(() => {
@@ -253,7 +415,6 @@
     const me = state.participants.find(p => p.id === uid);
     myRole = me ? me.role : null;
 
-    // Board
     const boardEl = $('board');
     boardEl.innerHTML = '';
     state.board.forEach((val, i) => {
@@ -280,7 +441,6 @@
     }
     $('statusLine').innerHTML = statusText;
 
-    // Host match controls
     const hostControls = $('hostMatchControls');
     hostControls.innerHTML = '';
     if (isHost){
@@ -302,7 +462,6 @@
       }
     }
 
-    // Roster
     const roster = $('roster');
     roster.innerHTML = '';
     state.participants.forEach(p => {
@@ -348,7 +507,6 @@
       roster.appendChild(row);
     });
 
-    // Pending join requests (host only)
     const reqBox = $('hostRequests');
     reqBox.innerHTML = '';
     if (isHost && state.pending && state.pending.length){
@@ -373,7 +531,6 @@
     }
   }
 
-  // ---- Mic / WebRTC voice mesh ----
   $('micBtn').onclick = async () => {
     if (!micEnabled){
       try {
@@ -430,7 +587,6 @@
         });
       }
     });
-    // Clean up peers who left
     Object.keys(peers).forEach(pid => {
       if (!others.find(p => p.id === pid)){
         peers[pid].close();
